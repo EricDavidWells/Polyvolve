@@ -1,53 +1,77 @@
-import DrawingFunctions
 import numpy as np
 import random
 from skimage import metrics
-from deap import base
-from deap import creator
-from deap import tools
 import cv2
+from matplotlib import pyplot as plt
 
 
 def init_poly_dna_cv2(polyNum, verticeNum):
-    dna = np.random.random(verticeNum*polyNum*2 + polyNum*3)
+    dna = np.random.random(verticeNum*polyNum*2 + polyNum*4)
     return dna
 
 
-def create_poly_from_dna(dna, polyNum, verticeNum, shape, dtype=np.int8):
+def create_poly_from_dna(dna, polyNum, verticeNum, shape, dtype=np.uint8):
 
     ptsarray = np.array(dna[0:verticeNum*polyNum*2].reshape([polyNum, verticeNum, 2]))
-    colarray = np.array(dna[verticeNum*polyNum*2::].reshape([polyNum, 3]))
+    colarray = np.array(dna[verticeNum*polyNum*2::].reshape([polyNum, 4]))
 
     ptsarray[:,:,0] = ptsarray[:,:,0]*shape[1]
     ptsarray[:,:,1] = ptsarray[:,:,1]*shape[0]
-    colarray = colarray*255
-
     ptsarray = ptsarray.astype(int)
-    colarray = colarray.astype(int)
 
-    img = np.zeros(shape, dtype=dtype)  # image is defined this way to preserve the data type of the target image
+    colarray[:,:3] = colarray[:,:3]*255
+    colarray[:,:3] = colarray[:,:3].astype(int)
+
+    img = np.ones([shape[0], shape[1], 3], dtype=dtype)*0  # image is defined this way to preserve the data type of the target image
 
     for i in range(0, polyNum):
+        overlay = img.copy()
         pts = ptsarray[i]
-        color = tuple(colarray[i].tolist())
-        cv2.fillPoly(img, [pts], color)
+        color = tuple(colarray[i,0:3].tolist())
+        alpha = colarray[i, 3]/1.2
+        cv2.fillPoly(overlay, [pts], color)
+        img = cv2.addWeighted(overlay, alpha, img, 1-alpha, 0)
+        # cv2.imshow("check", img)
+        # cv2.waitKey()
+
+    # rgbimg = cv2.cvtColor(img, cv2.COLOR_HSV2RGB)
+    # labimg = cv2.cvtColor(img, cv2.COLOR_LAB2RGB)
 
     return img
 
 
-def rico_ssim(img1, img2):
-    ssim = metrics.structural_similarity(img1, img2, multichannel=True)
+def rico_ssim(img1, img2, shape):
+
+    temp1 = cv2.resize(img1, shape)
+    temp2 = cv2.resize(img2, shape)
+    ssim = metrics.structural_similarity(temp1, temp2, multichannel=True)
     return ssim
 
 
-def rico_mse(image1, image2):
-    # err = measure.compare_mse(image1, image2)
-
-    rgbimg1 = cv2.cvtColor(image1, cv2.COLOR_HSV2RGB)
-    # hsv2 = cv2.cvtColor(image2, cv2.COLOR_RGB2HSV)
-    # err = ((image1-image2)**2).mean()
-    err = ((rgbimg1-image2)**2).mean()
+def rico_mse(image1, image2, displayFlag = False):
+    diff = np.subtract(image1, image2)
+    err = np.sum(np.square(diff))
     return err
+
+
+def rico_mse_hsv(image1, image2):
+    # print(image1.shape)
+    hsv1 = cv2.cvtColor(image1, cv2.COLOR_RGB2HSV)
+    hsv2 = cv2.cvtColor(image2, cv2.COLOR_RGB2HSV)
+    diff = np.subtract(hsv1, hsv2)
+    err = np.sum(np.square(diff))
+
+    return err
+
+
+def rico_mse_lab(image1, image2):
+    lab1 = cv2.cvtColor(image1, cv2.COLOR_RGB2LAB)
+    lab2 = cv2.cvtColor(image2, cv2.COLOR_RGB2LAB)
+    diff = np.subtract(lab1, lab2)
+    err = np.sum(np.square(diff))
+
+    return err
+
 
 def twopointcrossover(mom, dad):
     """
@@ -73,70 +97,127 @@ def twopointcrossover(mom, dad):
     return child, cross1, cross2
 
 
-def randmutation(child, mutationrate=0.05, minvalue=0, maxvalue=1000):
+def randomcrossover(mom, dad):
+    child = np.zeros(mom.shape)
+    for i in range(0, len(mom)):
+        if random.random() < 0.5:
+            child[i] = mom[i]
+        else:
+            child[i] = dad[i]
+
+    return child
+
+
+def randmutation(child, mutationrate=0.05):
 
     mutations = 0
     mutant = np.array(child)
     for i in range(0, len(child)):
         if random.random() < mutationrate:
-            mutant[i] = random.random()*(maxvalue-minvalue) + minvalue
+            mutant[i] = random.random()
             mutations += 1
 
     return mutant, mutations
 
 
-if __name__ == "__main__":
-    targetimg = cv2.imread("IMG_2497.jpg")
-    shape = np.shape(targetimg)
-    polyNum = 100
-    verticeNum = 4
-    popNum = 50
-    survivorNum = 10
-    mutationrate = 0.01
+def randmutation_amount(child, mutationrate, shiftmax):
 
-    # dna1 = init_poly_dna_cv2(polyNum, verticeNum)
-    # img1 = create_poly_from_dna(dna1, polyNum, verticeNum, shape, np.uint8)
-    #
-    # dna2 = init_poly_dna_cv2(polyNum, verticeNum)
-    # img2 = create_poly_from_dna(dna2, polyNum, verticeNum, shape, np.uint8)
-    #
-    # dna3, cross1, cross2 = twopointcrossover(dna1, dna2)
-    # img3 = create_poly_from_dna(dna3, polyNum, verticeNum, shape, np.uint8)
-    #
-    # dna4, mutationnum = randmutation(dna3, 0.025, min(shape))
-    # img4 = create_poly_from_dna(dna4, polyNum, verticeNum, shape, np.uint8)
-    #
-    # cv2.imshow("target", targetimg)
-    # cv2.imshow("img1", img1)
-    # cv2.imshow("img2", img2)
-    # cv2.imshow("img3", img3)
-    # cv2.imshow("img4", img4)
-    # cv2.waitKey()
+    mutations = 0
+    mutant = np.array(child)
+    for i in range(0, len(child)):
+        if random.random() < mutationrate:
+            mutant[i] += (random.random()-0.5)*shiftmax*2
+            mutant[i] = max(mutant[i], 0)
+            mutant[i] = min(mutant[i], 1)
+            mutations += 1
+
+    return mutant, mutations
+
+
+def randmutation_amount2(child, mutationrate, mutationamount):
+    mutations = 0
+    mutant = np.array(child)
+    if random.random() < mutationrate:
+        for i in range(0, len(child)):
+            if random.random() < mutationamount:
+                mutant[i] += (random.random() - 0.5) * 0.2 * 2
+                mutant[i] = max(mutant[i], 0)
+                mutant[i] = min(mutant[i], 1)
+                mutant[i] = random.random()
+                mutations += 1
+
+    return mutant, mutations
+
+
+def savepopulation(imgarray, filebase):
+    for i in range(0, len(imgarray)):
+        cv2.imwrite(filebase + str(i) + ".png", imgarray[i])
+
+
+if __name__ == "__main__":
+    targetimg = cv2.imread("lion.png")
+    # targetimg = cv2.imread("monalisa2.png")
+    originalshape = targetimg.shape
+    displayshape = (300, int(300*targetimg.shape[1]/targetimg.shape[0]))
+    calcshape = (25, int(25*targetimg.shape[1]/targetimg.shape[0]))
+
+    calctargetimg = cv2.resize(targetimg, calcshape)
+    displaytargetimg = cv2.resize(targetimg, tuple(np.flip(displayshape)))
+    cv2.imshow("displaytarget", displaytargetimg)
+
+    # shape = np.shape(targetimg)
+    polyNum = 125
+    verticeNum = 3
+    popNum = 100
+    survivorNum = int(popNum*0.1) + 1
+    mutationrate = 0.01
+    mutationamount = 0.1
+
+    gensperplot = 10
+    genstotal = 10000
+    fitlog = []
+    # plt.ion()
+    # plt.show()
 
     pop = []
     for i in range(0, popNum):
         pop.append(init_poly_dna_cv2(polyNum, verticeNum))
 
-    for h in range(0, 10):
-        for g in range(0, 1000):
+    for h in range(0, int(genstotal/gensperplot)):
+        for g in range(0, gensperplot):
 
-            fits = list(map(lambda x: rico_mse(create_poly_from_dna(x, polyNum, verticeNum, shape, np.uint8), targetimg), pop))
-            fitind = np.argsort(np.array(fits))
-            # survivors = pop[fitind[:survivorNum]]
+            polys = [create_poly_from_dna(x, polyNum, verticeNum, calcshape) for x in pop]
+            fits = [rico_ssim(x, calctargetimg, calcshape) for x in polys]
+            # fits = [rico_mse_lab(x, targetimg) for x in polys]
+            fitind = np.argsort(-np.array(fits))
             survivors = [pop[i] for i in fitind[:survivorNum]]
 
             while len(survivors) < popNum:
-                child, cross1, cross2 = twopointcrossover(survivors[random.randint(0,4)], survivors[random.randint(0,4)])
-                mutant, mutationnum = randmutation(child, mutationrate, 0, 1)
+                parent1 = survivors[random.randint(0,survivorNum-1)]
+                parent2 = survivors[random.randint(0,survivorNum-1)]
+                # child, cross1, cross2 = twopointcrossover(survivors[random.randint(0,survivorNum-1)], survivors[random.randint(0,survivorNum-1)])
+                child = randomcrossover(parent1, parent2)
+                # mutant, mutationnum = randmutation(child, mutationrate)
+                mutant, mutationnum = randmutation_amount(child, mutationrate, mutationamount)
                 survivors.append(mutant)
 
-            print(fits[fitind[0]], h, g)
             pop = list(survivors)
+            fitlog.append(fits[fitind[0]])
 
-        cv2.imshow("best", create_poly_from_dna(survivors[0], polyNum, verticeNum, shape, np.uint8))
-        cv2.waitKey()
+            # print(g)
+            displayimg = create_poly_from_dna(pop[fitind[0]], polyNum, verticeNum, displayshape)
+            cv2.imshow("rgbimg", displayimg)
+            cv2.waitKey(1)
 
+        plt.plot(fitlog, 'b')
+        plt.draw()
+        plt.pause(0.001)
+        savepopulation([displayimg], r"images\fkm8s")
+        # input("press enter: ")
+        # cv2.imshow("best", create_poly_from_dna(survivors[0], polyNum, verticeNum, shape, np.uint8))
+        # cv2.waitKey()
 
+    cv2.waitKey()
 # need to do roulette selection for survivors or something, convert images to hsv at beginning, add alpha channel using this
 # https://gist.github.com/IAmSuyogJadhav/305bfd9a0605a4c096383408bee7fd5c
 
