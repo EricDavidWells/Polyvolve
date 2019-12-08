@@ -156,7 +156,8 @@ def savepopulation(imgarray, filebase):
 
 if __name__ == "__main__":
     # img_orig = cv2.imread("monalisa2.png")
-    img_orig = cv2.imread(r"images\lion.png")
+    filename = "joker2.png"
+    img_orig = cv2.imread(r"images\\" + filename)
     dispsize = 300
     calcsize = 75
 
@@ -216,7 +217,7 @@ if __name__ == "__main__":
         plt.plot(fitlog, 'b')
         plt.draw()
         plt.pause(0.001)
-        savepopulation([displayimg], r"images\fkm8s")
+        savepopulation([displayimg], r"images\\" + "GA_" + filename)
         # input("press enter: ")
         # cv2.imshow("best", create_poly_from_dna(survivors[0], polyNum, verticeNum, shape, np.uint8))
         # cv2.waitKey()

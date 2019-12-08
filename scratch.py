@@ -1,7 +1,9 @@
 import cv2
 import numpy as np
 import main
+from numba import cuda
 
+print(cuda.gpus)
 
 # shape = np.array([500, 500, 3])
 # img = np.ones(shape)
@@ -10,21 +12,21 @@ import main
 # cv2.waitKey()
 #
 
-targetimg = cv2.imread("green.png")
-targetimg = cv2.resize(targetimg, (100, 100))
-
-img = cv2.imread(r"images\fkm8s0.png")
-cv2.imshow("original", img)
-cv2.imshow("target", targetimg)
-cv2.waitKey()
-
-R = img[:,:,0]
-G = img[:,:,1]
-B = img[:,:,2]
-
-err = main.rico_mse(targetimg, img)
-err2 = main.rico_mse(img, targetimg)
-print(err, err2)
+# targetimg = cv2.imread("green.png")
+# targetimg = cv2.resize(targetimg, (100, 100))
+#
+# img = cv2.imread(r"images\fkm8s0.png")
+# cv2.imshow("original", img)
+# cv2.imshow("target", targetimg)
+# cv2.waitKey()
+#
+# R = img[:,:,0]
+# G = img[:,:,1]
+# B = img[:,:,2]
+#
+# err = main.rico_mse(targetimg, img)
+# err2 = main.rico_mse(img, targetimg)
+# print(err, err2)
 
 # shape = img.shape
 # vcat = img
