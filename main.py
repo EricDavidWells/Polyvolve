@@ -155,17 +155,21 @@ def savepopulation(imgarray, filebase):
 
 
 if __name__ == "__main__":
-    targetimg = cv2.imread("lion.png")
-    # targetimg = cv2.imread("monalisa2.png")
-    originalshape = targetimg.shape
-    displayshape = (300, int(300*targetimg.shape[1]/targetimg.shape[0]))
-    calcshape = (25, int(25*targetimg.shape[1]/targetimg.shape[0]))
+    # img_orig = cv2.imread("monalisa2.png")
+    img_orig = cv2.imread(r"images\lion.png")
+    dispsize = 300
+    calcsize = 75
 
-    calctargetimg = cv2.resize(targetimg, calcshape)
-    displaytargetimg = cv2.resize(targetimg, tuple(np.flip(displayshape)))
-    cv2.imshow("displaytarget", displaytargetimg)
+    shape_orig = img_orig.shape
+    dispshape = (dispsize, int(dispsize*shape_orig[1]/shape_orig[0]))
+    calcshape = (calcsize, int(calcsize*shape_orig[1]/shape_orig[0]))
 
-    # shape = np.shape(targetimg)
+    img_calc = cv2.resize(img_orig, calcshape)
+    img_calcenlarged = cv2.resize(img_calc, tuple([dispshape[1], dispshape[0]]))
+
+    cv2.imshow("enlarged calc image", img_calcenlarged)
+
+    # shape = np.shape(img_orig)
     polyNum = 125
     verticeNum = 3
     popNum = 100
@@ -187,8 +191,8 @@ if __name__ == "__main__":
         for g in range(0, gensperplot):
 
             polys = [create_poly_from_dna(x, polyNum, verticeNum, calcshape) for x in pop]
-            fits = [rico_ssim(x, calctargetimg, calcshape) for x in polys]
-            # fits = [rico_mse_lab(x, targetimg) for x in polys]
+            fits = [rico_ssim(x, img_calc, calcshape) for x in polys]
+            # fits = [rico_mse_lab(x, img_orig) for x in polys]
             fitind = np.argsort(-np.array(fits))
             survivors = [pop[i] for i in fitind[:survivorNum]]
 
@@ -205,8 +209,8 @@ if __name__ == "__main__":
             fitlog.append(fits[fitind[0]])
 
             # print(g)
-            displayimg = create_poly_from_dna(pop[fitind[0]], polyNum, verticeNum, displayshape)
-            cv2.imshow("rgbimg", displayimg)
+            displayimg = create_poly_from_dna(pop[fitind[0]], polyNum, verticeNum, dispshape)
+            cv2.imshow("current best", displayimg)
             cv2.waitKey(1)
 
         plt.plot(fitlog, 'b')
