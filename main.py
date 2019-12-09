@@ -3,27 +3,27 @@ import cv2
 from matplotlib import pyplot as plt
 import time
 if __name__ == "__main__":
-    filename = "joker2.png"
+    filename = "irongiantrgb.png"
     timestr = time.strftime("%Y%m%d_%H%M")
-    savefiledirectory = r"E:\PyGAcv2\joker"
+    savefiledirectory = "E:\\PyGAcv2\\" + filename.replace(".png", "")
     saveflag = True
     plotflag = False
     displayflag = True
     savesize = 650
     dispsize = 300
-    calcsize = 100
+    calcsize = 50
 
-    populationnum = 50
+    populationnum = 100
     polynum = 150
     verticenum = 3
-    mutationrate = 0.025
-    mutationamount = 0.5
+    mutationrate = 0.05
+    mutationamount = 0.2
     survivalamt = 0.15
     parentamt = 0.15
 
     maxgenerations = 50000
     generationsperdisp = 1
-    generationsperplot = 100
+    generationsperplot = 10
     generationspersave = 10
     imgsavecount = 0
     fitlog = []
@@ -35,7 +35,9 @@ if __name__ == "__main__":
     saveshape = (savesize, int(savesize * shape_orig[0] / shape_orig[1]))
 
     img_calc = cv2.resize(img_orig, calcshape)
-    img_calcenlarged = cv2.resize(img_calc, tuple([dispshape[1], dispshape[0]]))
+    img_calcenlarged = cv2.resize(img_calc, tuple([dispshape[0], dispshape[1]]))
+
+    cv2.imshow("target", img_calcenlarged)
 
     def initfun_():
         individual = Individual(polynum, verticenum)
@@ -56,6 +58,7 @@ if __name__ == "__main__":
         if not individual.img or individual.img.shape[0:2] != calcshape:
             individual.draw(calcshape)
         err = ImgComparison.rico_ssim(individual.img, img_calc)
+        # err = ImgComparison.rico_mse(individual.img, img_calc)
         return err
 
     def mutationfun_(dna):
@@ -65,6 +68,8 @@ if __name__ == "__main__":
     population = Population(populationnum, initfun_, fitnessfun_, RicoGATools.randomcrossover,
                             mutationfun_, survivalamt, parentamt, evaltype=1)
 
+    plt.xlabel("Generations")
+    plt.ylabel("Fitness")
     for i in range(0, maxgenerations):
         population.evaluate()
         population.breed()
@@ -83,13 +88,14 @@ if __name__ == "__main__":
                 plt.draw()
                 plt.pause(0.001)
 
-        if i% generationspersave == 0:
+        if i % generationspersave == 0:
             if saveflag:
                 best.draw(saveshape)
-                filepath = savefiledirectory + "\\" + timestr + "_" + str(imgsavecount)
-                best.save(filepath + "GA.png")
+                filepath = savefiledirectory + "\\images\\" + timestr + "_GA" + str(imgsavecount)
+                best.save(filepath + ".png")
                 imgsavecount += 1
-                plt.savefig(filepath + "PL.png")
+                filepath = savefiledirectory + "\\plots\\" + timestr + "_PL" + str(imgsavecount)
+                plt.savefig(filepath + ".png")
 
         print(i)
 
