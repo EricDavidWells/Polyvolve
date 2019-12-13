@@ -2,8 +2,8 @@ import cv2
 import numpy as np
 import main
 from numba import cuda
-
-print(cuda.gpus)
+from skimage import metrics
+# print(cuda.gpus)
 
 # shape = np.array([500, 500, 3])
 # img = np.ones(shape)
@@ -12,6 +12,23 @@ print(cuda.gpus)
 # cv2.waitKey()
 #
 
+
+targetimg = cv2.imread("images\\manatee.png")
+guessimg = cv2.imread("images\\20191209_2317_GA1088.png")
+
+calcsize = 300
+shape_orig = targetimg.shape
+calcshape = (calcsize, int(calcsize * shape_orig[0] / shape_orig[1]))
+
+img_calc = cv2.resize(targetimg, calcshape)
+img_gues = cv2.resize(guessimg, calcshape)
+
+cv2.imshow("target", img_calc)
+cv2.imshow("guess", img_gues)
+cv2.waitKey()
+
+print(metrics.mean_squared_error(img_calc, img_gues))
+print(metrics.normalized_root_mse(img_calc, img_gues))
 # targetimg = cv2.imread("green.png")
 # targetimg = cv2.resize(targetimg, (100, 100))
 #

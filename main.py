@@ -1,25 +1,91 @@
-from rico_imgGA import Individual, Population, ImgComparison, RicoGATools
+from rico_imgGA import *
 import cv2
 from matplotlib import pyplot as plt
 import time
+
+
+def initrandom():
+    individual = IndividualPoly(polynum, verticenum)
+    individual.randomize()
+    return individual
+
+
+def initzero():
+    individual = IndividualPoly(polynum, verticenum)
+    individual.zero()
+    return individual
+
+
+def initzerocolor():
+    individual = IndividualPoly(polynum, verticenum)
+    individual.zerocolonly()
+    return individual
+
+
+def initrandomrec():
+    individual = IndividualRectangle(polynum)
+    individual.randomize()
+    return individual
+
+
+def initrandomcircle():
+    individual = IndividualCircle(polynum)
+    individual.randomize()
+    return individual
+
+
+def fitness_ssim(individual):
+    if not individual.img or individual.img.shape[0:2] != calcshape:
+        individual.draw(calcshape)
+    err = ImgComparison.rico_ssim(individual.img, img_calc)
+    return err
+
+
+def fitness_mse(individual):
+    if not individual.img or individual.img.shape[0:2] != calcshape:
+        individual.draw(calcshape)
+    err = ImgComparison.rico_mse(individual.img, img_calc)
+    return err
+
+
+def fitness_mseLAB(individual):
+    if not individual.img or individual.img.shape[0:2] != calcshape:
+        individual.draw(calcshape)
+    err = ImgComparison.rico_mse_lab(individual.img, img_calc)
+    return err
+
+
+def mutation_randshift(dna):
+    mutantdna, mutations = RicoGATools.randmutation_shift(dna, mutationrate, mutationamount)
+    return mutantdna
+
+
 if __name__ == "__main__":
-    filename = "irongiantrgb.png"
+    filename = "starrynight.png"
     timestr = time.strftime("%Y%m%d_%H%M")
-    savefiledirectory = "E:\\PyGAcv2\\" + filename.replace(".png", "")
+    savefiledirectory = r"C:\Users\Rico\Pictures\polyvolve\\" + filename.replace(".png", "")
     saveflag = True
     plotflag = False
     displayflag = True
     savesize = 650
     dispsize = 300
-    calcsize = 50
+    calcsize = 75
 
     populationnum = 100
     polynum = 150
-    verticenum = 3
-    mutationrate = 0.05
-    mutationamount = 0.2
+    verticenum = 10
+    mutationrate = 0.01
+    mutationamount = 0.15
     survivalamt = 0.15
     parentamt = 0.15
+    # initfunction = initrandom
+    # initfunction = initrandomrec
+    initfunction = initrandomcircle
+    fitnessfunction = fitness_ssim
+    # crossoverfunction = RicoGATools.randomcrossover
+    crossoverfunction = RicoGATools.twopointcrossover
+    mutationfunction = mutation_randshift
+    evaltype = 1
 
     maxgenerations = 50000
     generationsperdisp = 1
@@ -39,34 +105,8 @@ if __name__ == "__main__":
 
     cv2.imshow("target", img_calcenlarged)
 
-    def initfun_():
-        individual = Individual(polynum, verticenum)
-        individual.randomize()
-        return individual
-
-    def initfun2_():
-        individual = Individual(polynum, verticenum)
-        individual.zero()
-        return individual
-
-    def initfun3_():
-        individual = Individual(polynum, verticenum)
-        individual.zerocolonly()
-        return individual
-
-    def fitnessfun_(individual):
-        if not individual.img or individual.img.shape[0:2] != calcshape:
-            individual.draw(calcshape)
-        err = ImgComparison.rico_ssim(individual.img, img_calc)
-        # err = ImgComparison.rico_mse(individual.img, img_calc)
-        return err
-
-    def mutationfun_(dna):
-        mutantdna, mutations = RicoGATools.randmutation_amount(dna, mutationrate, mutationamount)
-        return mutantdna
-
-    population = Population(populationnum, initfun_, fitnessfun_, RicoGATools.randomcrossover,
-                            mutationfun_, survivalamt, parentamt, evaltype=1)
+    population = Population(populationnum, initfunction, fitnessfunction, crossoverfunction,
+                            mutationfunction, survivalamt, parentamt, evaltype)
 
     plt.xlabel("Generations")
     plt.ylabel("Fitness")
