@@ -4,6 +4,8 @@ from matplotlib import pyplot as plt
 import time
 
 
+# helper functions created using global variables to feed into population class.  they allow for customization of the
+# functions created in rico_imgGA file while ensuring that the input and outputs are what the Population class expects
 def initrandom():
     individual = IndividualPoly(polynum, verticenum)
     individual.randomize()
@@ -62,38 +64,42 @@ def mutation_randshift(dna):
 
 if __name__ == "__main__":
     filename = "starrynight.png"
-    timestr = time.strftime("%Y%m%d_%H%M")
+    # directory to save files in MUST HAVE two folders in it, one titled "images" and one titled "plots" if you wish
+    # to save the results periodically
     savefiledirectory = r"C:\Users\Rico\Pictures\polyvolve\\" + filename.replace(".png", "")
-    saveflag = True
+    saveflag = False
     plotflag = False
     displayflag = True
-    savesize = 650
-    dispsize = 300
-    calcsize = 75
+    savesize = 650  # x-dimension resolution to save polygon images (y-dimension scaled)
+    dispsize = 300  # x-dimension resolution for display during runtime (y-dimension scaled)
+    calcsize = 75   # x-dimension resolution for actual calculation (y-dimension scaled)
 
-    populationnum = 100
-    polynum = 150
-    verticenum = 10
-    mutationrate = 0.01
-    mutationamount = 0.15
-    survivalamt = 0.15
-    parentamt = 0.15
-    # initfunction = initrandom
+    populationnum = 100 # number of individuals per generation
+    polynum = 150   # number of polygons per individual
+    verticenum = 3  # number of vertices per polygon
+    mutationrate = 0.01     # dependent on mutation function
+    mutationamount = 0.15   # dependent on mutation function
+    survivalamt = 0.15  # percentage of individuals who survive to next generation
+    parentamt = 0.15    # percentage of individuals used to create next generation
+    initfunction = initrandom   # function used to initiate each individual, must have no parameters and return an individual
     # initfunction = initrandomrec
-    initfunction = initrandomcircle
-    fitnessfunction = fitness_ssim
-    # crossoverfunction = RicoGATools.randomcrossover
-    crossoverfunction = RicoGATools.twopointcrossover
-    mutationfunction = mutation_randshift
-    evaltype = 1
+    # initfunction = initrandomcircle
+    fitnessfunction = fitness_ssim  # function used to evaluate fitness of each individual, must take in individual parameter
+                                    # and return a fitness value
+    crossoverfunction = RicoGATools.randomcrossover # function used to create dna for new generation, must take in two
+                                                    # lists of DNA and return a new list of DNA
+    # crossoverfunction = RicoGATools.twopointcrossover
+    mutationfunction = mutation_randshift   # function used to mutate dna, must take in a list of DNA and return a list of DNA
+    evaltype = 1    # 1 or maximizing fitness, -1 for minimizing fitness
 
-    maxgenerations = 50000
-    generationsperdisp = 1
-    generationsperplot = 10
-    generationspersave = 10
+    maxgenerations = 50000  # max generations to stop algorithm
+    generationsperdisp = 1  # generations per update of display image
+    generationsperplot = 10 # generations per update of display plot
+    generationspersave = 10 # generations per save of display image
     imgsavecount = 0
     fitlog = []
 
+    timestr = time.strftime("%Y%m%d_%H%M")
     img_orig = cv2.imread(r"images\\" + filename)
     shape_orig = img_orig.shape
     dispshape = (dispsize, int(dispsize * shape_orig[0] / shape_orig[1]))
@@ -138,5 +144,4 @@ if __name__ == "__main__":
                 plt.savefig(filepath + ".png")
 
         print(i)
-
     cv2.waitKey()

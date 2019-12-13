@@ -176,7 +176,6 @@ class IndividualCircle(IndividualPoly):
         self.img = img
 
 
-
 class ImgComparison:
     def rico_ssim(img1, img2):
         ssim = metrics.structural_similarity(img1, img2, multichannel=True)
