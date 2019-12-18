@@ -20,18 +20,6 @@ class Population:
         self.num_parents = int(p_reproduce * population_size)
         self.minimize_fitness = minimize_fitness
 
-    @staticmethod
-    def evaluate_individual(evaluation_queue, done_queue, fitness_fn):
-        not_done = True
-        while not_done:
-            individual = evaluation_queue.get()
-            if individual is None:
-                not_done = False
-            else:
-                if individual.fitness is None:
-                    individual.fitness = fitness_fn(individual)
-                done_queue.put(1)
-
     def evaluate(self):
         # Survivors do not need to be evaluated.
         for individual in self.population:
