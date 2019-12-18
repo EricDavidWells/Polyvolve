@@ -109,12 +109,12 @@ def parse_args(init_functions, fitness_functions, crossover_functions, mutation_
                         help="Percentage of individuals that survive to the next step.")
     parser.add_argument("--p_reproduce", type=float, default=0.15,
                         help="Percentage of individuals which reproduce each step.")
-    parser.add_argument("--init_fn", default="init_random", choices=init_functions.keys())
-    parser.add_argument("--fitness_fn", default="fitness_ssim", choices=fitness_functions.keys(),
+    parser.add_argument("--init_fn", default="random", choices=init_functions.keys())
+    parser.add_argument("--fitness_fn", default="ssim", choices=fitness_functions.keys(),
                         help="Function for determining the fitness of a given individual.")
-    parser.add_argument("--crossover_fn", default="random_crossover", choices=crossover_functions.keys(),
+    parser.add_argument("--crossover_fn", default="random", choices=crossover_functions.keys(),
                         help="Function for determining how individuals cross over (eg. what their children look like.)")
-    parser.add_argument("--mutation_fn", default="mutation_randshift", choices=mutation_functions.keys(),
+    parser.add_argument("--mutation_fn", default="random_shift", choices=mutation_functions.keys(),
                         help="Function for mutating an individual.")
     parser.add_argument("-s", dest="save", action="store_true",
                         help="If selected, will periodically save the best individual, as an image, to diskm as well as"
@@ -141,6 +141,7 @@ def parse_args(init_functions, fitness_functions, crossover_functions, mutation_
     args = parser.parse_args()
     if not (args.display or args.plot or args.save):
         raise EnvironmentError("Must select one of -d, -p, or -s")
+        
     if args.run_to_fitness > 1 or < 0:
         raise EnvironmentError("Fitness must be specified between 0 and 1")
 
