@@ -184,7 +184,8 @@ if __name__ == "__main__":
     generations_per_plot = args.generations_per_plot
 
     num_images = 0
-    len_count_str = len(str(max_generations // args.generations_per_save))
+    max_images = max_generations // args.generations_per_save
+    len_count_str = len(str(max_images))
     time_str = time.strftime("%Y%m%d_%H%M")
     generations_per_save = args.generations_per_save
 
@@ -208,7 +209,7 @@ if __name__ == "__main__":
     plt.xlabel("Generations")
     plt.ylabel("Fitness")
 
-    for i in range(0, max_generations):
+    for i in range(1, max_generations+1):
         population.evaluate()
         population.breed()
 
@@ -232,6 +233,12 @@ if __name__ == "__main__":
             plt.plot(fitness_log, 'b')
             plt.savefig(os.path.join(plot_dir, f"{time_str}_PL{padded_str}.png"))
             num_images += 1
+            if not args.display:
+                fitness_str = str(fitness_log[-1])[:6].ljust(6, "0")
+                percentage_str = str(i/max_images).ljust(len_count_str + 1, "0")
+                print(f"{percentage_str}% done. Current fitness is {fitness_str}%.")
 
-        print(i)
+        if args.display:
+            print(i)
+
     cv2.waitKey()
