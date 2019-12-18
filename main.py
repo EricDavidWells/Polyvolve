@@ -1,7 +1,11 @@
-from rico_imgGA import *
+import time
+
 import cv2
 from matplotlib import pyplot as plt
-import time
+
+import evolution
+import image_comparison
+from rico_imgGA import *
 
 
 # helper functions created using global variables to feed into population class.  they allow for customization of the
@@ -37,28 +41,38 @@ def init_random_circle():
 
 
 def fitness_ssim(individual):
-    if not individual.img or individual.img.shape[0:2] != calc_shape:
+    if individual.img is None or individual.img.shape[0:2] != calc_shape:
         individual.draw(calc_shape)
-    err = ImgComparison.rico_ssim(individual.img, img_calc)
+    err = image_comparison.rico_ssim(individual.img, img_calc)
     return err
 
 
 def fitness_mse(individual):
-    if not individual.img or individual.img.shape[0:2] != calc_shape:
+    if individual.img is None or individual.img.shape[0:2] != calc_shape:
         individual.draw(calc_shape)
-    err = ImgComparison.rico_mse(individual.img, img_calc)
+    err = image_comparison.rico_mse(individual.img, img_calc)
     return err
 
 
 def fitness_mseLAB(individual):
-    if not individual.img or individual.img.shape[0:2] != calc_shape:
+    if individual.img is None or individual.img.shape[0:2] != calc_shape:
         individual.draw(calc_shape)
-    err = ImgComparison.rico_mse_lab(individual.img, img_calc)
+    err = image_comparison.rico_mse_lab(individual.img, img_calc)
     return err
 
 
-def mutation_randshift(dna):
-    mutantdna, mutations = RicoGATools.randmutation_shift(dna, mutation_rate, mutation_amount)
+def random_mutation(dna):
+    mutantdna, mutations = evolution.random_mutation(dna, mutation_rate)
+    return mutantdna
+
+
+def random_mutation_shift(dna):
+    mutantdna, mutations = evolution.random_mutation_shift(dna, mutation_rate, mutation_amount)
+    return mutantdna
+
+
+def random_mutation_single(dna):
+    mutantdna, mutations = evolution.random_mutation_single(dna, mutation_rate, mutation_amount)
     return mutantdna
 
 
@@ -120,9 +134,15 @@ def parse_args(init_functions, fitness_functions, crossover_functions, mutation_
                         help="Number of generations between each plot update.")
     parser.add_argument("--generations_per_save", type=int, default=10,
                         help="Number of generations between saving images.")
+    parser.add_argument("--run_to_fitness", type=float, default=0.90,
+                        help="Run until a fitness of the given value is reached (should be from 0 to 1).")
+    parser.add_argument("--save_last", action="store_true",
+                        help="Saves final frame.")
     args = parser.parse_args()
     if not (args.display or args.plot or args.save):
         raise EnvironmentError("Must select one of -d, -p, or -s")
+    if args.run_to_fitness > 1 or < 0:
+        raise EnvironmentError("Fitness must be specified between 0 and 1")
 
     if args.plot:
         print("Please avoid dragging the plot until you see a line - the program may crash otherwise.")
@@ -133,20 +153,22 @@ def parse_args(init_functions, fitness_functions, crossover_functions, mutation_
 if __name__ == "__main__":
     import os
 
+    # SET UP PROGRAM
+
     IMAGE_SUB_DIR = "images"
     PLOT_SUB_DIR = "plots"
 
-    init_functions = {"init_random": init_random,
-                      "init_zero": init_zero,
-                      "init_zero_color": init_zero_color,
-                      "init_random_rect": init_random_rect,
-                      "init_random_circle": init_random_circle}
-    fitness_functions = {"fitness_ssim": fitness_ssim,
-                         "fitness_mse": fitness_mse,
-                         "fitness_mseLAB": fitness_mseLAB}
-    mutation_functions = {"mutation_randshift": mutation_randshift}
-    crossover_functions = {"random_crossover": RicoGATools.randomcrossover,
-                           "two_point_crossover": RicoGATools.twopointcrossover}
+    init_functions = {"random": init_random,
+                      "zero": init_zero,
+                      "zero_color": init_zero_color,
+                      "random_rect": init_random_rect,
+                      "random_circle": init_random_circle}
+    fitness_functions = {"ssim": fitness_ssim,
+                         "mse": fitness_mse,
+                         "mseLAB": fitness_mseLAB}
+    mutation_functions = {"random_shift": random_mutation_shift}
+    crossover_functions = {"random": evolution.random_crossover,
+                           "two_point": evolution.two_point_crossover}
 
     args = parse_args(init_functions, fitness_functions, crossover_functions, mutation_functions)
 
@@ -160,6 +182,7 @@ if __name__ == "__main__":
         os.makedirs(os.path.join(image_dir), exist_ok=True)
         os.makedirs(os.path.join(plot_dir), exist_ok=True)
 
+    # EVOLUTION DYNAMICS
     num_individuals = args.num_individuals
     p_survival = args.p_survival
     p_reproduce = args.p_reproduce
@@ -175,8 +198,8 @@ if __name__ == "__main__":
     mutation_rate = args.mutation_rate
     mutation_amount = args.mutation_amount
     mutation_function = mutation_functions[args.mutation_fn]
-    eval_type = -1 if args.minimize_fitness else 1
 
+    # OUTPUT
     max_generations = args.max_generations
     generations_per_display = args.generations_per_display
 
@@ -202,46 +225,62 @@ if __name__ == "__main__":
     if args.display:
         cv2.imshow("target", img_calc_enlarged)
 
-    population = Population(num_individuals, init_function, fitness_function, crossover_function,
-                            mutation_function, p_survival, p_reproduce, eval_type)
+    # EXECUTION BEGINS HERE
 
+    population = Population(num_individuals, init_function, fitness_function, crossover_function,
+                            mutation_function, p_survival, p_reproduce, args.minimize_fitness)
+
+    plot_made = False
     plt.xlabel("Generations")
     plt.ylabel("Fitness")
-
+    saved = False
     fitness_log = []
+    best = None
     for i in range(1, max_generations + 1):
         population.evaluate()
         population.breed()
 
-        best = population.pop[0]
+        best = population.population[0]
         fitness_log.append(best.fitness)
+
+        saved = False
 
         if args.display and i % generations_per_display == 0:
             best.draw(disp_shape)
             best.display("Best", False)
+            if fitness_log[-1] > args.run_to_fitness:
+                break
 
         if args.plot and i % generations_per_plot == 0:
             plt.plot(fitness_log, 'b')
             plt.draw()
             plt.pause(0.001)
+            if fitness_log[-1] > args.run_to_fitness:
+                break
 
         if args.save and i % generations_per_save == 0:
-            padded_str = str(num_images).zfill(len_count_str)
-
             best.draw(save_shape)
+            padded_str = str(num_images).zfill(len_count_str)
             best.save(os.path.join(image_dir, f"{time_str}_GA{padded_str}.png"))
 
             plt.plot(fitness_log, 'b')
             plt.savefig(os.path.join(plot_dir, f"{time_str}_PL{padded_str}.png"))
-            
             if not args.display:
                 fitness_str = str(fitness_log[-1] * 100)[:6].ljust(6, "0")
-                percentage_str = str(i / max_images * 100)[:len_count_str+2].ljust(len_count_str + 2, "0")
+                percentage_str = str(i / max_images * 100)[:len_count_str + 2].ljust(len_count_str + 2, "0")
                 print(f"{percentage_str}% done. Current fitness is {fitness_str}%.")
             num_images += 1
+            saved = True
+            if fitness_log[-1] > args.run_to_fitness:
+                break
 
         if args.display:
             print(i)
 
     if args.display:
         cv2.waitKey()
+
+    if args.save_last and not saved:
+        best.draw(save_shape)
+        padded_str = str(num_images).zfill(len_count_str)
+        best.save(os.path.join(image_dir, f"{time_str}_GA_FINAL.png"))
