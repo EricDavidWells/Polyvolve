@@ -142,7 +142,7 @@ def parse_args(init_functions, fitness_functions, crossover_functions, mutation_
     if not (args.display or args.plot or args.save):
         raise EnvironmentError("Must select one of -d, -p, or -s")
         
-    if args.run_to_fitness > 1 or < 0:
+    if args.run_to_fitness > 1 or args.run_to_fitness < 0:
         raise EnvironmentError("Fitness must be specified between 0 and 1")
 
     if args.plot:
