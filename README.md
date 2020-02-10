@@ -15,7 +15,7 @@ starrynight.jpg was downloaded from https://en.wikipedia.org/wiki/File:Van_Gogh_
 
 # Command Line Options
 
-optional arguments:
+optional arguments: 
   -h, --help            show this help message and exit
   --image_path IMAGE_PATH
                         Path to source image.
